@@ -14,30 +14,43 @@ Read [`problem_statement.md`](./problem_statement.md) for the complete challenge
 
 ## Quick Start
 
-Clone the repository and move into the project directory:
+### 1. Environment Setup
+
+Clone the repository and set up a virtual environment:
 
 ```bash
 git clone https://github.com/interviewstreet/hackerrank-orchestrate-october26.git
 cd hackerrank-orchestrate-october26
+
+# Create and activate virtual environment
+python -m venv venv
+# On macOS / Linux:
+source venv/bin/activate
+# On Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Start your AI coding tool from the **repository root** so it automatically reads [`AGENTS.md`](./AGENTS.md) and logs your session turns to `log.txt` in the root directory.
+### 2. Configure Credentials
 
-Build your solution in `code/main.py`, or use another language and document its setup and run command clearly in your README.
-
-Your solution must:
-
-- Read the input files from `dataset/`
-- Generate one prediction row for every request in `dataset/deletion_requests.csv`
-- Write the final predictions to `output.csv` in the repository root
-
-Run the starter Python entry point with:
+Copy `.env.example` to `.env` and set your Gemini API key:
 
 ```bash
-python3 code/main.py
+cp .env.example .env
+# Edit .env and supply GEMINI_API_KEY
 ```
 
-The blank template at `dataset/output.csv` is provided as a reference. Your final generated file for submission must be the root-level `output.csv`.
+### 3. Run the Audit Agent
+
+Run the main pipeline to audit deletion requests and generate predictions:
+
+```bash
+python code/main.py
+```
+
+The agent will read inputs from `dataset/` and write the final submission file to `output.csv` in the repository root.
 
 
 ## Dataset

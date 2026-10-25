@@ -1,0 +1,49 @@
+# Case Audit & Evidence Classification Prompt — Ghost Data Still Exists
+
+You are the Lead Auditor evaluating whether a personal data deletion request has been fully and compliantly executed.
+
+## Inputs Provided
+For each case, you receive:
+1. Case Metadata:
+   - `case_id`, `requested_at`, `reported_status`, `reported_at`, `audit_at`, `request_text`
+2. Subject Profile:
+   - `user_id`, current email, historical emails, phone, email hash
+3. Applicable Policy Rules (`deletion_rules.csv`):
+   - Rules mapped by `data_category` and condition (`DELETE`, `REDACT`, `ANONYMIZE`, `RETAIN`, `ACCOUNT_TOMBSTONE`)
+4. System Activity Events:
+   - Activity events logged for the user's identifiers occurring at or before `audit_at`
+5. Evidence Discovered:
+   - Records, logs, or attachments matching the user's identifiers in files captured at or before `audit_at`
+
+## Evaluation Procedure
+1. Authorization Check:
+   - Does `request_text` authorize deletion or account closure?
+   - If user only requests data export, access, rectification, or marketing unsubscribe:
+     -> `deletion_status`: `NOT_APPLICABLE`
+     -> `findings`: []
+
+2. System-by-System Audit:
+   For every system where the subject's data or activity was discovered:
+   - `account_service`:
+     * If user profile still exists -> Finding: `REPORT_REMAINING_RECORD` (state: `PRESENT`)
+   - `search_service`:
+     * If user appears in search index / autocomplete -> Finding: `REPORT_REMAINING_RECORD` (state: `PRESENT`)
+   - `export_service`:
+     * If an export archive / download link containing user data exists -> Finding: `REPORT_REMAINING_RECORD` (state: `PRESENT`)
+   - `support_platform`:
+     * If a ticket contains exposed PII that should be redacted -> Finding: `REPORT_EXPOSED_PII` (state: `PRESENT`)
+     * If an unredacted identity document / attachment is stored -> Finding: `REPORT_REMAINING_RECORD` (state: `PRESENT`)
+   - `analytics_platform`:
+     * If analytics records contain raw direct identifiers (unhashed email, phone, name) instead of being anonymized -> Finding: `REPORT_EXPOSED_PII` (state: `PRESENT`)
+   - `identity_service`:
+     * If tombstone still retains direct identifiers (name, email, phone) -> Finding: `REPORT_EXPOSED_PII` (state: `PRESENT`)
+   - `integration_service` (Data Flows):
+     * If a `SYNC_RECORD` or data replication flow is active and has not been disabled -> Finding: `REPORT_ACTIVE_DATA_FLOW` (state: `ACTIVE`)
+   - `backup_service` (Restore Risks):
+     * If a backup snapshot contains deleted records and has not been blocked from restoring -> Finding: `REPORT_RESTORE_RISK` (state: `ACTIVE`)
+   - `security_service` (Audit Logs):
+     * Must be retained by policy. Do NOT report as remaining record or violation.
+
+3. Final Case Status:
+   - If any finding exists: `INCOMPLETE`
+   - If no findings exist: `COMPLETE`
